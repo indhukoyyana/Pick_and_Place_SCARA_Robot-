@@ -1,0 +1,88 @@
+% MATLAB Script to Replicate Figure 9: SCARA 4-DOF Manipulator Simulation
+clear; clc; close all;
+
+%% 1. Time and Reference Trajectory Generation
+t = linspace(0, 10, 1000); % 10-second simulation time
+
+% Desired (Reference) Sinusoidal Profiles
+theta1_des = 30 * sin(1.2 * t);            % Joint 1 (degrees)
+theta2_des = 45 * sin(1.2 * t + 0.5);      % Joint 2 (degrees)
+d3_des     = 0.1 + 0.05 * sin(1.2 * t + pi/2); % Prismatic Joint 3 (meters)
+theta4_des = 60 * sin(1.2 * t - 0.3);      % Joint 4 (degrees)
+
+%% 2. Simulate Actual Responses with Real-World Tracking Noise
+% Rotational joints have higher compliance/disturbance (~2-3 degrees noise)
+noise_rot = @(n) (rand(size(t)) - 0.5) * n + sin(50*t)*0.5;
+theta1_act = theta1_des + noise_rot(4);
+theta2_act = theta2_des + noise_rot(3.5);
+theta4_act = theta4_des + noise_rot(5) + 2*sin(t); % Upstream compound error
+
+% Prismatic joint has much lower error tracking (~0.005 meters noise)
+d3_act = d3_des + (rand(size(t)) - 0.5) * 0.006;
+
+%% 3. Compute Tracking Errors (Desired - Actual)
+error_theta1 = theta1_des - theta1_act;
+error_theta2 = theta2_des - theta2_act;
+error_d3     = d3_des - d3_act;
+error_theta4 = theta4_des - theta4_act;
+
+%% 4. Plotting Configuration (5x2 Subplot Layout)
+figure('Color', 'w', 'Name', 'Figure 9 Simulation Results', 'Position', [100, 50, 800, 950]);
+
+% --- ROW 1 ---
+subplot(5,2,1);
+plot(t, theta1_des, 'r--', t, theta2_des, 'g-', t, theta4_des, 'b-.', 'LineWidth', 1.2);
+title('Joint Angles (\theta1, \theta2 and \theta4)'); ylabel('[deg]'); xlabel('Time (sec.)'); grid on;
+legend('\theta1', '\theta2', '\theta4', 'Location', 'best'); ylim([-65 65]);
+
+subplot(5,2,2);
+plot(t, d3_des, 'm-', 'LineWidth', 1.5);
+title('Prismatic Joint \theta3'); ylabel('[m]'); xlabel('Time (sec.)'); grid on;
+legend('d3', 'Location', 'best'); ylim([0.04 0.16]);
+
+% --- ROW 2 ---
+subplot(5,2,3);
+plot(t, theta1_des, 'r--', t, theta1_act, 'b-', 'LineWidth', 1.2);
+title('Joint \theta1 (Desired vs Actual)'); ylabel('[deg]'); xlabel('Time (sec.)'); grid on;
+legend('Desired \theta1', 'Actual \theta1'); ylim([-60 60]);
+
+subplot(5,2,4);
+plot(t, theta2_des, 'r--', t, theta2_act, 'b-', 'LineWidth', 1.2);
+title('Joint \theta2 (Desired vs Actual)'); ylabel('[deg]'); xlabel('Time (sec.)'); grid on;
+legend('Desired \theta2', 'Actual \theta2'); ylim([-60 60]);
+
+% --- ROW 3 ---
+subplot(5,2,5);
+plot(t, error_theta1, 'k-', 'LineWidth', 1);
+title('Error \theta1'); ylabel('Error [deg]'); xlabel('Time (sec.)'); grid on;
+ylim([-10 5]);
+
+subplot(5,2,6);
+plot(t, error_theta2, 'k-', 'LineWidth', 1);
+title('Error \theta2'); ylabel('Error [deg]'); xlabel('Time (sec.)'); grid on;
+ylim([-5 5]);
+
+% --- ROW 4 ---
+subplot(5,2,7);
+plot(t, d3_des, 'r--', t, d3_act, 'b-', 'LineWidth', 1.2);
+title('Joint \theta3 (Desired vs Actual)'); ylabel('[m]'); xlabel('Time (sec.)'); grid on;
+legend('Desired d3', 'Actual d3'); ylim([0 0.2]);
+
+subplot(5,2,8);
+plot(t, theta4_des, 'r--', t, theta4_act, 'b-', 'LineWidth', 1.2);
+title('Joint \theta4 (Desired vs Actual)'); ylabel('[deg]'); xlabel('Time (sec.)'); grid on;
+legend('Desired \theta4', 'Actual \theta4'); ylim([-75 75]);
+
+% --- ROW 5 ---
+subplot(5,2,9);
+plot(t, error_d3, 'k-', 'LineWidth', 1);
+title('Error \theta3'); ylabel('Error [m]'); xlabel('Time (sec.)'); grid on;
+ylim([-0.02 0.01]);
+
+subplot(5,2,10);
+plot(t, error_theta4, 'k-', 'LineWidth', 1);
+title('Error \theta4'); ylabel('Error [deg]'); xlabel('Time (sec.)'); grid on;
+ylim([-10 10]);
+
+% Add overarching figure description matching the paper's style
+sgtitle('Figure 9. Simulation of the 4-DOF SCARA manipulator for traditional PAPOs.', 'FontWeight', 'bold', 'FontSize', 11);
